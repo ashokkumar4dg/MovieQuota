@@ -333,7 +333,8 @@ const els = {
   genreRow: document.getElementById("genreRow"),
   skipButton: document.getElementById("skipButton"),
   interestedButton: document.getElementById("interestedButton"),
-  ratingGrid: document.getElementById("ratingGrid"),
+  ratingRange: document.getElementById("ratingRange"),
+  ratingStar: document.getElementById("ratingStar"),
   ratingState: document.getElementById("ratingState"),
   doneState: document.getElementById("doneState"),
   summaryText: document.getElementById("summaryText"),
@@ -359,7 +360,6 @@ async function bootstrap() {
   ensureDeviceToken();
   await hydrateRemoteTitles();
   ensureTodayBatch();
-  renderRatingButtons();
   bindEvents();
   render();
 }
@@ -491,7 +491,7 @@ function render() {
     els.genreRow.appendChild(text);
   });
 
-  updateRatingUI(null);
+  updateRatingUI(0);
   renderHistory();
 }
 
@@ -770,33 +770,19 @@ function formatTomorrowHint() {
   return tomorrow.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "short" });
 }
 
-function renderRatingButtons() {
-  els.ratingGrid.innerHTML = "";
-  for (let rating = 1; rating <= 10; rating += 1) {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "rating-button";
-    if (rating <= 3) {
-      button.classList.add("low");
-    } else if (rating <= 7) {
-      button.classList.add("mid");
-    } else {
-      button.classList.add("high");
-    }
-    button.textContent = rating;
-    button.dataset.rating = String(rating);
-    button.setAttribute("aria-label", `Rate ${rating} out of 10`);
-    els.ratingGrid.appendChild(button);
-  }
-}
-
 function updateRatingUI(selectedRating) {
-  const buttons = Array.from(els.ratingGrid.querySelectorAll(".rating-button"));
-  buttons.forEach((button) => {
-    const isSelected = Number(button.dataset.rating) === selectedRating;
-    button.classList.toggle("selected", isSelected);
-  });
-  els.ratingState.textContent = selectedRating ? `Locked at ${selectedRating}/10` : "Tap 1-10 to lock";
+  const rating = Number(selectedRating) || 0;
+  els.ratingRange.value = String(rating);
+  els.ratingStar.innerHTML = "";
+  for (let index = 1; index <= 10; index += 1) {
+    const star = document.createElement("span");
+    star.textContent = "★";
+    if (index <= rating) {
+      star.classList.add("filled");
+    }
+    els.ratingStar.appendChild(star);
+  }
+  els.ratingState.textContent = rating ? `Locked at ${rating}/10` : "Slide 0-10 to rate";
 }
 
 function bindEvents() {
@@ -807,12 +793,15 @@ function bindEvents() {
     commitAction({ swipeDirection: "left", liked: false, rating: null });
   });
 
-  els.ratingGrid.addEventListener("click", (event) => {
-    const target = event.target.closest(".rating-button");
-    if (!target) {
+  els.ratingRange.addEventListener("input", () => {
+    updateRatingUI(Number(els.ratingRange.value));
+  });
+
+  els.ratingRange.addEventListener("change", () => {
+    const rating = Number(els.ratingRange.value);
+    if (!rating) {
       return;
     }
-    const rating = Number(target.dataset.rating);
     commitAction({ swipeDirection: "right", liked: true, rating });
   });
 
