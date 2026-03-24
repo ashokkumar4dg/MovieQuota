@@ -400,6 +400,7 @@ h1 {
   border-radius: 22px;
   padding: 8px;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.08));
+  margin-top: 10px;
 }
 
 .rating-head {
@@ -416,6 +417,71 @@ h1 {
   padding: 5px;
   border-radius: 999px;
   background: linear-gradient(90deg, rgba(255, 149, 174, 0.22), rgba(255, 231, 155, 0.22), rgba(174, 251, 228, 0.22));
+}
+
+.rating-star-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.rating-star {
+  display: flex;
+  justify-content: center;
+  gap: 2px;
+  font-size: 1.28rem;
+  line-height: 1;
+}
+
+.rating-star span {
+  color: rgba(255, 255, 255, 0.24);
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.05);
+  transition: color 0.18s ease, text-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.rating-star span.filled {
+  color: #fff4a8;
+  text-shadow: 0 0 12px rgba(255, 231, 140, 0.4), 0 0 20px rgba(255, 214, 82, 0.26);
+  transform: scale(1.04);
+}
+
+.rating-range {
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+}
+
+.rating-range::-webkit-slider-runnable-track {
+  height: 10px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(255, 149, 174, 0.22), rgba(255, 231, 155, 0.22), rgba(174, 251, 228, 0.22));
+}
+
+.rating-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 2px solid rgba(116, 196, 255, 0.9);
+  margin-top: -5px;
+  box-shadow: 0 0 18px rgba(132, 214, 255, 0.35);
+}
+
+.rating-range::-moz-range-track {
+  height: 10px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(255, 149, 174, 0.22), rgba(255, 231, 155, 0.22), rgba(174, 251, 228, 0.22));
+}
+
+.rating-range::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 2px solid rgba(116, 196, 255, 0.9);
+  box-shadow: 0 0 18px rgba(132, 214, 255, 0.35);
 }
 
 .rating-button {
@@ -601,6 +667,11 @@ h1 {
 
 .recommendation-rating-pill {
   white-space: nowrap;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  color: rgba(244, 255, 248, 0.92);
+  font-weight: 800;
 }
 
 .recommendation-card-mini p {
@@ -626,7 +697,7 @@ h1 {
 .done-actions {
   display: flex;
   gap: 12px;
-  margin-top: 22px;
+  margin-top: 28px;
 }
 
 .action-pill {
@@ -643,7 +714,7 @@ h1 {
   justify-content: center;
   align-items: center;
   gap: 28px;
-  margin: 14px auto 0;
+  margin: 18px auto 0;
   padding: 0;
 }
 
@@ -733,7 +804,7 @@ h1 {
 }
 
 .done-history-preview {
-  margin-top: 24px;
+  margin-top: 30px;
   padding: 14px;
   border-radius: 20px;
   background: rgba(255, 255, 255, 0.08);
@@ -836,7 +907,7 @@ h1 {
 
   .poster-wrap {
     aspect-ratio: 4 / 5.2;
-    max-height: 340px;
+    max-height: 320px;
   }
 
   .progress-copy,
@@ -912,6 +983,9 @@ h1 {
   .recommendation-card,
   .done-state {
     border-radius: 28px;
+    width: calc(100% - 40px);
+    margin-left: auto;
+    margin-right: auto;
   }
 
   .recommendation-box {
@@ -922,6 +996,16 @@ h1 {
     min-height: 48px;
     border-radius: 18px;
     font-size: 0.88rem;
+  }
+
+  .progress-panel {
+    width: calc(100% - 24px);
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .card-content {
+    padding: 12px 14px 14px;
   }
 
   .icon-action {
