@@ -340,9 +340,10 @@ const els = {
   unlockText: document.getElementById("unlockText"),
   recommendationBox: document.getElementById("recommendationBox"),
   recommendationGrid: document.getElementById("recommendationGrid"),
+  doneHistoryPreview: document.getElementById("doneHistoryPreview"),
+  doneHistoryList: document.getElementById("doneHistoryList"),
   historyPanel: document.getElementById("historyPanel"),
   historyContent: document.getElementById("historyContent"),
-  historyToggle: document.getElementById("historyToggle"),
   closeHistoryButton: document.getElementById("closeHistoryButton"),
   doneHistoryButton: document.getElementById("doneHistoryButton"),
   retakeButton: document.getElementById("retakeButton"),
@@ -485,10 +486,9 @@ function render() {
   els.descriptionText.textContent = current.description;
   els.genreRow.innerHTML = "";
   current.genres.forEach((genre) => {
-    const pill = document.createElement("span");
-    pill.className = "chip chip-soft";
-    pill.textContent = genre;
-    els.genreRow.appendChild(pill);
+    const text = document.createElement("span");
+    text.textContent = genre;
+    els.genreRow.appendChild(text);
   });
 
   updateRatingUI(null);
@@ -501,6 +501,8 @@ function renderDoneState() {
   const topGenres = summarizeTopGenres(todayEntries);
   els.summaryText.textContent = `You liked ${likedCount} titles today. Top mood: ${topGenres || "Still learning your taste"}.`;
   renderRecommendation(todayEntries);
+  els.doneHistoryPreview.classList.add("hidden");
+  els.doneHistoryList.innerHTML = "";
   els.unlockText.textContent = `New recommendations unlock after ${formatTomorrowHint()}.`;
   els.card.classList.add("hidden");
   els.doneState.classList.remove("hidden");
@@ -542,7 +544,34 @@ function renderRecommendation(entries) {
         <span class="rating-pill">IMDb ${recommendation.imdb}</span>
       </div>
       ${details ? `<p class="recommendation-extra">${details.platform} • ${details.languages}</p><p class="recommendation-extra">${details.note}</p>` : ""}
+      <a class="watch-link" href="https://t.me/MovieQuota" target="_blank" rel="noreferrer">
+        <span class="watch-link-icon">✈</span>
+        <span>Watch Online</span>
+      </a>
     `;
+
+    const titleEl = card.querySelector("h3");
+    const ratingEl = card.querySelector(".rating-pill:last-child");
+    if (titleEl && ratingEl) {
+      const head = document.createElement("div");
+      head.className = "recommendation-head";
+      titleEl.replaceWith(head);
+      head.appendChild(titleEl);
+      head.appendChild(ratingEl);
+      ratingEl.classList.add("recommendation-rating-pill");
+    }
+
+    const extras = Array.from(card.querySelectorAll(".recommendation-extra"));
+    if (details && extras.length) {
+      extras[0].textContent = `${details.platform} - ${details.languages}`;
+    }
+    extras.slice(1).forEach((node) => node.remove());
+
+    const watchIcon = card.querySelector(".watch-link-icon");
+    if (watchIcon) {
+      watchIcon.textContent = "";
+    }
+
     els.recommendationGrid.appendChild(card);
   });
   els.recommendationBox.classList.remove("hidden");
@@ -787,11 +816,11 @@ function bindEvents() {
     commitAction({ swipeDirection: "right", liked: true, rating });
   });
 
-  els.historyToggle.addEventListener("click", toggleHistoryPanel);
   els.closeHistoryButton.addEventListener("click", toggleHistoryPanel);
   els.doneHistoryButton.addEventListener("click", () => {
-    els.historyPanel.classList.remove("hidden");
-    renderHistory();
+    renderDoneHistoryPreview();
+    els.doneHistoryPreview.classList.remove("hidden");
+    els.doneHistoryPreview.scrollIntoView({ behavior: "smooth", block: "start" });
   });
   els.retakeButton.addEventListener("click", resetTodayProgress);
 
@@ -962,7 +991,24 @@ function formatDateLabel(dateKey) {
 function resetTodayProgress() {
   state.history[state.activeDate] = {};
   saveState();
+  els.doneHistoryPreview.classList.add("hidden");
+  els.doneHistoryList.innerHTML = "";
   els.historyPanel.classList.add("hidden");
   vibrate();
   render();
+}
+
+function renderDoneHistoryPreview() {
+  const entries = Object.values(getTodayActions()).sort((a, b) => new Date(b.actedAt) - new Date(a.actedAt));
+  els.doneHistoryList.innerHTML = "";
+
+  entries.forEach((entry) => {
+    const item = document.createElement("article");
+    item.className = "done-history-item";
+    item.innerHTML = `
+      <strong>${entry.title}</strong>
+      <p class="subtle">Rated ${entry.rating ? `${entry.rating}/10` : "No rating"} at ${new Date(entry.actedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</p>
+    `;
+    els.doneHistoryList.appendChild(item);
+  });
 }
