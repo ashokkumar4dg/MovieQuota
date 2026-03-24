@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CineSwipe Daily Picks</title>
+    <title>MovieQuota Daily Picks</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -14,17 +14,16 @@
   </head>
   <body>
     <div class="app-shell">
-      <div class="backdrop-glow glow-1"></div>
-      <div class="backdrop-glow glow-2"></div>
+      <div class="aurora aurora-a"></div>
+      <div class="aurora aurora-b"></div>
+      <div class="aurora aurora-c"></div>
 
       <header class="topbar glass-panel">
         <div>
-          <p class="eyebrow">Daily Telegram Picks</p>
           <h1>MovieQuota</h1>
           <p class="subtle">Swipe, like and rate today's 10 hand-picked titles.</p>
         </div>
         <div class="topbar-actions">
-          <span id="sourceBadge" class="chip chip-soft">Daily Picks Locked For 24h</span>
           <button id="historyToggle" class="ghost-button" type="button">History</button>
         </div>
       </header>
@@ -43,6 +42,7 @@
 
           <section id="cardSection" class="card-section">
             <article id="recommendationCard" class="recommendation-card glass-panel">
+              <div class="card-sheen"></div>
               <div class="poster-wrap">
                 <img id="posterImage" alt="Movie poster" />
                 <div class="poster-overlay"></div>
@@ -78,16 +78,20 @@
                 </div>
 
                 <div class="actions-row">
-                  <button id="skipButton" class="glass-button alt" type="button">Swipe Left / Skip</button>
-                  <button id="interestedButton" class="glass-button" type="button">Swipe Right / Interested</button>
+                  <button id="skipButton" class="glass-button action-pill action-pill-muted" type="button">Left Swipe</button>
+                  <button id="interestedButton" class="glass-button action-pill action-pill-bright" type="button">Right Swipe</button>
                 </div>
               </div>
             </article>
 
             <section id="doneState" class="done-state glass-panel hidden">
-              <p class="eyebrow">Completed</p>
+              <p class="eyebrow completion-eyebrow">Completed</p>
               <h2>Today's 10 picks are done.</h2>
               <p id="summaryText" class="subtle"></p>
+              <section id="recommendationBox" class="recommendation-box glass-panel hidden">
+                <p class="eyebrow recommendation-label">Recommended Next</p>
+                <div id="recommendationGrid" class="recommendation-grid"></div>
+              </section>
               <p id="unlockText" class="unlock-text"></p>
               <div class="done-actions">
                 <button id="doneHistoryButton" class="glass-button" type="button">Open History</button>
