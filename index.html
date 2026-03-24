@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CineSwipe Daily Picks</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Sora:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <div class="backdrop-glow glow-1"></div>
+      <div class="backdrop-glow glow-2"></div>
+
+      <header class="topbar glass-panel">
+        <div>
+          <p class="eyebrow">Daily Telegram Picks</p>
+          <h1>MovieQuota</h1>
+          <p class="subtle">Swipe, like and rate today's 10 hand-picked titles.</p>
+        </div>
+        <div class="topbar-actions">
+          <span id="sourceBadge" class="chip chip-soft">Daily Picks Locked For 24h</span>
+          <button id="historyToggle" class="ghost-button" type="button">History</button>
+        </div>
+      </header>
+
+      <main class="layout">
+        <section class="stack-panel">
+          <div class="progress-panel glass-panel">
+            <div class="progress-copy">
+              <span id="dayLabel" class="chip chip-soft">Today</span>
+              <strong id="progressText">0 / 10 completed</strong>
+            </div>
+            <div class="progress-track">
+              <div id="progressFill" class="progress-fill"></div>
+            </div>
+          </div>
+
+          <section id="cardSection" class="card-section">
+            <article id="recommendationCard" class="recommendation-card glass-panel">
+              <div class="poster-wrap">
+                <img id="posterImage" alt="Movie poster" />
+                <div class="poster-overlay"></div>
+                <div class="top-badges">
+                  <span id="typeBadge" class="chip">Movie</span>
+                  <span id="industryBadge" class="chip chip-soft">Hollywood</span>
+                </div>
+              </div>
+
+              <div class="card-content">
+                <div class="title-row">
+                  <div>
+                    <h2 id="titleText">Loading...</h2>
+                    <p id="metaText" class="subtle"></p>
+                  </div>
+                  <button id="likeButton" class="icon-button" type="button" aria-label="Like this title">
+                    <span>Love</span>
+                  </button>
+                </div>
+
+                <div class="ratings-row">
+                  <span id="imdbBadge" class="rating-pill">IMDb</span>
+                  <span id="tmdbBadge" class="rating-pill">TMDB</span>
+                </div>
+
+                <p id="descriptionText" class="description"></p>
+
+                <div class="genre-row" id="genreRow"></div>
+
+                <div class="rating-block glass-panel">
+                  <div class="rating-head">
+                    <strong>Your Rating</strong>
+                    <span id="ratingState" class="subtle">Tap 1-10 to lock</span>
+                  </div>
+                  <div id="ratingGrid" class="rating-grid"></div>
+                </div>
+
+                <div class="actions-row">
+                  <button id="skipButton" class="glass-button alt" type="button">Swipe Left / Skip</button>
+                  <button id="interestedButton" class="glass-button" type="button">Swipe Right / Interested</button>
+                </div>
+              </div>
+            </article>
+
+            <section id="doneState" class="done-state glass-panel hidden">
+              <p class="eyebrow">Completed</p>
+              <h2>Today's 10 picks are done.</h2>
+              <p id="summaryText" class="subtle"></p>
+              <p id="unlockText" class="unlock-text"></p>
+              <div class="done-actions">
+                <button id="doneHistoryButton" class="glass-button" type="button">Open History</button>
+                <button id="retakeButton" class="glass-button alt" type="button">Retake Today</button>
+              </div>
+            </section>
+          </section>
+        </section>
+
+        <aside id="historyPanel" class="history-panel glass-panel hidden">
+          <div class="history-header">
+            <div>
+              <p class="eyebrow">Your Activity</p>
+              <h3>History</h3>
+            </div>
+            <button id="closeHistoryButton" class="ghost-button" type="button">Close</button>
+          </div>
+          <div class="history-tabs">
+            <button data-tab="today" class="tab-button active" type="button">Today</button>
+            <button data-tab="yesterday" class="tab-button" type="button">Yesterday</button>
+            <button data-tab="week" class="tab-button" type="button">Last 7 Days</button>
+          </div>
+          <div id="historyContent" class="history-content"></div>
+        </aside>
+      </main>
+    </div>
+
+    <script src="./config.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
