@@ -1,12 +1,13 @@
 :root {
-  --bg: #09101b;
-  --bg-2: #111d2f;
-  --line: rgba(255, 255, 255, 0.14);
-  --text: #f4f7fb;
-  --muted: #9eb2c8;
-  --accent: #ff5470;
-  --accent-2: #5bc0ff;
-  --shadow: 0 24px 80px rgba(0, 0, 0, 0.42);
+  --bg: #7ca9d8;
+  --bg-2: #3d73d6;
+  --bg-3: #1641c5;
+  --line: rgba(255, 255, 255, 0.28);
+  --text: #f8fbff;
+  --muted: rgba(244, 248, 255, 0.84);
+  --accent: #1e58ff;
+  --accent-2: #8ed6ff;
+  --shadow: 0 24px 80px rgba(11, 32, 87, 0.26);
 }
 
 * {
@@ -19,9 +20,7 @@ body {
   font-family: "Manrope", sans-serif;
   color: var(--text);
   background:
-    radial-gradient(circle at top left, rgba(91, 192, 255, 0.18), transparent 30%),
-    radial-gradient(circle at top right, rgba(255, 84, 112, 0.2), transparent 25%),
-    linear-gradient(145deg, var(--bg), var(--bg-2));
+    linear-gradient(160deg, #a8c4e7 0%, #8eb4df 20%, #5d95e7 54%, #2350d6 76%, #1437a8 100%);
 }
 
 button,
@@ -42,14 +41,43 @@ button {
   padding: 16px 14px 24px;
 }
 
-.backdrop-glow {
-  display: none;
+.aurora {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(18px);
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+.aurora-a {
+  width: 560px;
+  height: 560px;
+  left: -140px;
+  top: 120px;
+  background: radial-gradient(circle, rgba(255, 241, 205, 0.88), rgba(255, 241, 205, 0.08) 62%, transparent 72%);
+}
+
+.aurora-b {
+  width: 740px;
+  height: 300px;
+  right: -170px;
+  top: 70px;
+  background: linear-gradient(135deg, rgba(203, 243, 255, 0.86), rgba(31, 103, 255, 0.24) 70%, transparent);
+  transform: rotate(-31deg);
+}
+
+.aurora-c {
+  width: 720px;
+  height: 720px;
+  right: -250px;
+  bottom: -260px;
+  background: radial-gradient(circle, rgba(15, 45, 188, 0.9), rgba(20, 61, 196, 0.3) 52%, transparent 72%);
 }
 
 .glass-panel {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04));
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.11));
   border: 1px solid var(--line);
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(28px);
   box-shadow: var(--shadow);
 }
 
@@ -65,25 +93,28 @@ button {
 
 .topbar {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 16px;
   border-radius: 22px;
-  padding: 14px 16px;
-  margin: 0 auto 12px;
-  max-width: 1180px;
+  padding: 8px 12px;
+  margin: 0 auto 8px;
+  max-width: 760px;
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.34);
+  box-shadow: 0 10px 30px rgba(27, 73, 170, 0.16);
 }
 
 .topbar-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
-  justify-content: flex-end;
+  justify-content: center;
 }
 
 .eyebrow {
-  margin: 0 0 6px;
+  margin: 0 0 3px;
   text-transform: uppercase;
   letter-spacing: 0.14em;
   font-size: 0.72rem;
@@ -97,8 +128,21 @@ h3 {
   margin: 0;
 }
 
+h1 {
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  font-weight: 800;
+  line-height: 1.05;
+}
+
 .subtle {
   color: var(--muted);
+}
+
+.topbar .subtle {
+  margin-top: 2px;
+  margin-bottom: 0;
+  font-weight: 700;
+  font-size: 0.88rem;
 }
 
 .layout {
@@ -119,8 +163,8 @@ h3 {
 }
 
 .progress-panel {
-  border-radius: 18px;
-  padding: 12px 14px;
+  border-radius: 24px;
+  padding: 9px 11px;
   width: 100%;
 }
 
@@ -129,14 +173,14 @@ h3 {
   justify-content: space-between;
   gap: 12px;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .progress-track {
   width: 100%;
   height: 10px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.18);
   overflow: hidden;
 }
 
@@ -144,35 +188,50 @@ h3 {
   width: 0;
   height: 100%;
   border-radius: 999px;
-  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.96), rgba(152, 220, 255, 0.92));
   transition: width 0.35s ease;
 }
 
 .recommendation-card {
+  position: relative;
   overflow: hidden;
-  border-radius: 22px;
+  border-radius: 34px;
   transform-origin: center center;
   transition: transform 0.22s ease, box-shadow 0.22s ease, filter 0.22s ease;
-  width: min(100%, 760px);
+  width: min(100%, 520px);
+  touch-action: pan-y;
+  margin: 0 auto;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.2), rgba(54, 128, 255, 0.26));
+  border-color: rgba(255, 255, 255, 0.32);
+}
+
+.card-sheen {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 18% 18%, rgba(255, 238, 200, 0.54), transparent 28%),
+    radial-gradient(circle at 78% 16%, rgba(170, 241, 255, 0.38), transparent 22%),
+    linear-gradient(140deg, transparent 38%, rgba(255, 255, 255, 0.22) 48%, transparent 58%);
+  pointer-events: none;
 }
 
 .recommendation-card.swipe-left {
-  transform: translateX(-92px) rotate(-10deg);
+  transform: translateX(-92px) rotate(-10deg) scale(0.985);
   box-shadow: 0 0 0 1px rgba(255, 84, 112, 0.35), 0 20px 60px rgba(255, 84, 112, 0.28);
   filter: saturate(1.08);
 }
 
 .recommendation-card.swipe-right {
-  transform: translateX(92px) rotate(10deg);
+  transform: translateX(92px) rotate(10deg) scale(0.985);
   box-shadow: 0 0 0 1px rgba(91, 192, 255, 0.35), 0 20px 60px rgba(91, 192, 255, 0.28);
   filter: saturate(1.08);
 }
 
 .poster-wrap {
   position: relative;
-  aspect-ratio: 16 / 8.8;
+  aspect-ratio: 4 / 5.4;
   overflow: hidden;
-  background: #18263b;
+  background: rgba(23, 54, 132, 0.18);
 }
 
 .poster-wrap img {
@@ -187,7 +246,7 @@ h3 {
 .poster-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgba(6, 11, 18, 0.96), rgba(6, 11, 18, 0.18) 58%, rgba(6, 11, 18, 0.12));
+  background: linear-gradient(to top, rgba(14, 34, 93, 0.72), rgba(6, 11, 18, 0.05) 58%, rgba(6, 11, 18, 0.02));
 }
 
 .top-badges {
@@ -215,18 +274,18 @@ h3 {
   padding: 6px 10px;
   font-size: 0.74rem;
   font-weight: 700;
-  background: rgba(255, 255, 255, 0.14);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.26);
 }
 
 .chip-soft {
-  background: rgba(91, 192, 255, 0.16);
+  background: rgba(171, 223, 255, 0.22);
 }
 
 .card-content {
   padding: 14px;
   display: grid;
-  gap: 12px;
+  gap: 8px;
 }
 
 .title-row {
@@ -237,9 +296,9 @@ h3 {
 
 .icon-button,
 .ghost-button {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.18);
   color: var(--text);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.24);
 }
 
 .icon-button {
@@ -262,7 +321,7 @@ h3 {
 .actions-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 6px;
 }
 
 .genre-row {
@@ -271,8 +330,8 @@ h3 {
 
 .description {
   margin: 0;
-  line-height: 1.45;
-  color: #e5edf7;
+  line-height: 1.35;
+  color: rgba(248, 251, 255, 0.95);
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
@@ -280,15 +339,16 @@ h3 {
 }
 
 .rating-block {
-  border-radius: 18px;
-  padding: 10px;
+  border-radius: 22px;
+  padding: 8px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.08));
 }
 
 .rating-head {
   display: flex;
   justify-content: space-between;
   gap: 10px;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .rating-grid {
@@ -297,14 +357,14 @@ h3 {
   gap: 5px;
   padding: 5px;
   border-radius: 999px;
-  background: linear-gradient(90deg, rgba(255, 84, 112, 0.18), rgba(255, 194, 92, 0.18), rgba(106, 240, 182, 0.18));
+  background: linear-gradient(90deg, rgba(255, 149, 174, 0.22), rgba(255, 231, 155, 0.22), rgba(174, 251, 228, 0.22));
 }
 
 .rating-button {
   min-height: 32px;
   color: var(--text);
-  background: rgba(9, 16, 27, 0.78);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.22);
   transition: transform 0.16s ease, background 0.16s ease, box-shadow 0.16s ease;
   border-radius: 999px;
   padding: 0;
@@ -317,8 +377,9 @@ h3 {
 }
 
 .rating-button.selected {
-  background: linear-gradient(135deg, rgba(255, 84, 112, 0.8), rgba(91, 192, 255, 0.8));
-  box-shadow: 0 14px 28px rgba(91, 192, 255, 0.22);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.88), rgba(148, 214, 255, 0.82));
+  color: #2249a8;
+  box-shadow: 0 14px 28px rgba(91, 192, 255, 0.2);
 }
 
 .rating-button.low {
@@ -348,13 +409,14 @@ h3 {
 
 .history-panel {
   border-radius: 28px;
-  padding: 18px;
+  padding: 14px;
   position: fixed;
   top: 24px;
   right: 24px;
   width: min(380px, calc(100vw - 32px));
   z-index: 10;
   max-height: calc(100vh - 48px);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.2), rgba(72, 132, 255, 0.2));
 }
 
 .history-header {
@@ -395,8 +457,8 @@ h3 {
   gap: 12px;
   padding: 10px;
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.18);
 }
 
 .history-item img {
@@ -416,8 +478,8 @@ h3 {
 }
 
 .done-state {
-  border-radius: 30px;
-  padding: 28px;
+  border-radius: 34px;
+  padding: 20px;
   width: min(100%, 760px);
 }
 
@@ -426,10 +488,82 @@ h3 {
   margin-top: 12px;
 }
 
+.recommendation-box {
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: 22px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.08));
+}
+
+.completion-eyebrow {
+  color: #9bffbf;
+  text-shadow: 0 0 16px rgba(77, 226, 126, 0.35);
+  font-weight: 800;
+}
+
+.recommendation-label {
+  color: #8cffb6;
+  text-shadow: 0 0 16px rgba(77, 226, 126, 0.35);
+  font-weight: 800;
+}
+
+.recommendation-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.recommendation-card-mini {
+  padding: 12px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.08));
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+
+.recommendation-card-mini h3 {
+  margin: 0 0 6px;
+  color: #f8fbff;
+}
+
+.recommendation-card-mini p {
+  margin: 0;
+}
+
+.recommendation-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.recommendation-extra {
+  margin-top: 8px;
+  color: rgba(244, 248, 255, 0.9);
+  font-size: 0.84rem;
+}
+
 .done-actions {
   display: flex;
   gap: 12px;
   margin-top: 18px;
+}
+
+.action-pill {
+  min-height: 56px;
+  border-radius: 22px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.1));
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.32);
+}
+
+.action-pill-muted {
+  color: #fef4f6;
+  background: linear-gradient(180deg, rgba(255, 141, 168, 0.22), rgba(255, 255, 255, 0.08));
+}
+
+.action-pill-bright {
+  color: #f4fbff;
+  background: linear-gradient(180deg, rgba(130, 219, 255, 0.26), rgba(255, 255, 255, 0.08));
 }
 
 .hidden {
@@ -461,21 +595,22 @@ h3 {
   .progress-panel,
   .card-content,
   .history-panel {
-    padding: 10px;
+    padding: 9px;
   }
 
   .topbar {
     flex-direction: column;
+    align-items: flex-start;
   }
 
   .topbar-actions {
     width: 100%;
-    justify-content: space-between;
+    justify-content: flex-end;
   }
 
   .poster-wrap {
-    aspect-ratio: 16 / 9;
-    max-height: 220px;
+    aspect-ratio: 4 / 5.2;
+    max-height: 340px;
   }
 
   .progress-copy,
@@ -504,27 +639,33 @@ h3 {
     font-size: 0.64rem;
   }
 
-  #sourceBadge {
-    display: none;
-  }
-
-  .eyebrow {
-    font-size: 0.62rem;
-    margin-bottom: 4px;
-  }
-
   h1 {
-    font-size: 1.35rem;
+    font-size: 1.18rem;
   }
 
   h2 {
-    font-size: 1.1rem;
+    font-size: 1rem;
   }
 
   .subtle,
   .description,
   .history-meta p {
-    font-size: 0.84rem;
+    font-size: 0.8rem;
+  }
+
+  .recommendation-card,
+  .done-state {
+    border-radius: 28px;
+  }
+
+  .recommendation-box {
+    padding: 12px;
+  }
+
+  .action-pill {
+    min-height: 48px;
+    border-radius: 18px;
+    font-size: 0.88rem;
   }
 
   .history-item {
