@@ -18,6 +18,29 @@ const POSTER_FALLBACK =
     </svg>
   `);
 
+const RECOMMENDATION_DETAILS = {
+  "laapataa-ladies": {
+    platform: "Netflix",
+    languages: "Hindi, English",
+    note: "Available on Netflix. Hindi is primary, with English support available."
+  },
+  "fallout": {
+    platform: "Prime Video",
+    languages: "English, Hindi",
+    note: "Available on Prime Video. English is original, and Hindi availability is supported on Prime Video India."
+  },
+  "mirzapur": {
+    platform: "Prime Video",
+    languages: "Hindi, English",
+    note: "Available on Prime Video. Hindi is primary, with English support available."
+  },
+  "maharaja": {
+    platform: "Netflix",
+    languages: "Hindi, English",
+    note: "Available on Netflix with Hindi access and English support."
+  }
+};
+
 const TITLES = [
   {
     id: "dune-part-two",
@@ -315,13 +338,14 @@ const els = {
   doneState: document.getElementById("doneState"),
   summaryText: document.getElementById("summaryText"),
   unlockText: document.getElementById("unlockText"),
+  recommendationBox: document.getElementById("recommendationBox"),
+  recommendationGrid: document.getElementById("recommendationGrid"),
   historyPanel: document.getElementById("historyPanel"),
   historyContent: document.getElementById("historyContent"),
   historyToggle: document.getElementById("historyToggle"),
   closeHistoryButton: document.getElementById("closeHistoryButton"),
   doneHistoryButton: document.getElementById("doneHistoryButton"),
   retakeButton: document.getElementById("retakeButton"),
-  sourceBadge: document.getElementById("sourceBadge"),
   tabButtons: Array.from(document.querySelectorAll(".tab-button"))
 };
 
@@ -476,6 +500,7 @@ function renderDoneState() {
   const likedCount = todayEntries.filter((entry) => entry.liked).length;
   const topGenres = summarizeTopGenres(todayEntries);
   els.summaryText.textContent = `You liked ${likedCount} titles today. Top mood: ${topGenres || "Still learning your taste"}.`;
+  renderRecommendation(todayEntries);
   els.unlockText.textContent = `New recommendations unlock after ${formatTomorrowHint()}.`;
   els.card.classList.add("hidden");
   els.doneState.classList.remove("hidden");
@@ -497,6 +522,135 @@ function summarizeTopGenres(entries) {
   return top ? top[0] : "";
 }
 
+function renderRecommendation(entries) {
+  const recommendations = getPersonalRecommendations(entries);
+  if (!recommendations.length) {
+    els.recommendationBox.classList.add("hidden");
+    return;
+  }
+
+  els.recommendationGrid.innerHTML = "";
+  recommendations.forEach((recommendation) => {
+    const details = RECOMMENDATION_DETAILS[recommendation.id] || null;
+    const card = document.createElement("article");
+    card.className = "recommendation-card-mini";
+    card.innerHTML = `
+      <h3>${recommendation.title}</h3>
+      <p class="subtle">${recommendation.reason}</p>
+      <div class="recommendation-meta">
+        <span class="chip chip-soft">${recommendation.type}</span>
+        <span class="rating-pill">IMDb ${recommendation.imdb}</span>
+      </div>
+      ${details ? `<p class="recommendation-extra">${details.platform} • ${details.languages}</p><p class="recommendation-extra">${details.note}</p>` : ""}
+    `;
+    els.recommendationGrid.appendChild(card);
+  });
+  els.recommendationBox.classList.remove("hidden");
+}
+
+function getPersonalRecommendations(entries) {
+  const sourceTitles = getSourceTitles();
+  const watchedToday = new Set(entries.map((entry) => entry.titleId));
+  const strongLikes = entries.filter((entry) => Number(entry.rating) >= 8);
+  const ratedPool = strongLikes.length ? strongLikes : entries.filter((entry) => entry.liked);
+
+  if (!ratedPool.length) {
+    return [];
+  }
+
+  const genreScores = {};
+  const industryScores = {};
+
+  ratedPool.forEach((entry) => {
+    const item = sourceTitles.find((title) => title.id === entry.titleId);
+    if (!item) {
+      return;
+    }
+    const weight = Number(entry.rating) || 7;
+    item.genres.forEach((genre) => {
+      genreScores[genre] = (genreScores[genre] || 0) + weight;
+    });
+    industryScores[item.industry] = (industryScores[item.industry] || 0) + weight;
+  });
+
+  const topGenre = getTopKey(genreScores);
+  const topIndustry = getTopKey(industryScores);
+  const seenEver = getSeenTitleIds();
+  const pool = sourceTitles
+    .filter((item) => !watchedToday.has(item.id))
+    .filter((item) => !seenEver.has(item.id))
+    .map((item) => ({
+      item,
+      score: getRecommendationScore(item, topGenre, topIndustry) + getMetadataBonus(item.id)
+    }))
+    .filter((entry) => entry.score > 0)
+    .sort((a, b) => b.score - a.score || Number(b.item.imdb) - Number(a.item.imdb));
+
+  const picks = [];
+  const moviePick = pool.find((entry) => entry.item.type === "Movie");
+  const seriesPick = pool.find((entry) => entry.item.type !== "Movie");
+
+  if (moviePick) {
+    picks.push({
+      ...moviePick.item,
+      reason: buildRecommendationReason(moviePick.item, topGenre, topIndustry)
+    });
+  }
+
+  if (seriesPick) {
+    picks.push({
+      ...seriesPick.item,
+      reason: buildRecommendationReason(seriesPick.item, topGenre, topIndustry)
+    });
+  }
+
+  return picks.slice(0, 2);
+}
+
+function getRecommendationScore(item, topGenre, topIndustry) {
+  let score = 0;
+  if (topGenre && item.genres.includes(topGenre)) {
+    score += 4;
+  }
+  if (topIndustry && item.industry === topIndustry) {
+    score += 3;
+  }
+  score += Number(item.imdb || 0) / 2;
+  return score;
+}
+
+function getMetadataBonus(id) {
+  return RECOMMENDATION_DETAILS[id] ? 1.5 : 0;
+}
+
+function buildRecommendationReason(item, topGenre, topIndustry) {
+  if (topGenre && topIndustry && item.genres.includes(topGenre) && item.industry === topIndustry) {
+    return `Because you rated ${topGenre.toLowerCase()} ${topIndustry.toLowerCase()} titles highly, you should also watch this.`;
+  }
+  if (topGenre && item.genres.includes(topGenre)) {
+    return `You clicked 8, 9 or 10 more often on ${topGenre.toLowerCase()} picks, so this is a strong match.`;
+  }
+  if (topIndustry && item.industry === topIndustry) {
+    return `You seem to enjoy ${topIndustry.toLowerCase()} recommendations more, so this fits your current taste.`;
+  }
+  return "This matches your recent high-rating pattern and should fit your taste.";
+}
+
+function getTopKey(counter) {
+  const top = Object.entries(counter).sort((a, b) => b[1] - a[1])[0];
+  return top ? top[0] : "";
+}
+
+function getSeenTitleIds() {
+  const ids = new Set();
+  Object.values(state.history).forEach((dayEntries) => {
+    Object.values(dayEntries).forEach((entry) => {
+      ids.add(entry.titleId);
+    });
+  });
+  return ids;
+}
+
 function getSourceTitles() {
   return remoteTitles.length ? remoteTitles : TITLES;
 }
@@ -514,15 +668,12 @@ async function hydrateRemoteTitles() {
       const list = Array.isArray(payload) ? payload : payload.titles;
       if (Array.isArray(list) && list.length) {
         remoteTitles = normalizeTitles(list);
-        els.sourceBadge.textContent = "Remote Live Data";
         return;
       }
     } catch (error) {
       console.warn("Remote title fetch failed", error);
     }
   }
-
-  els.sourceBadge.textContent = APP_CONFIG.titlesEndpoint ? "Local Fallback Data" : "Daily Picks Locked For 24h";
 }
 
 function normalizeTitles(items) {
@@ -661,6 +812,9 @@ function bindSwipeGestures() {
   let active = false;
 
   els.card.addEventListener("pointerdown", (event) => {
+    if (event.pointerType === "touch") {
+      els.card.setPointerCapture(event.pointerId);
+    }
     startX = event.clientX;
     diffX = 0;
     active = true;
@@ -671,10 +825,10 @@ function bindSwipeGestures() {
       return;
     }
     diffX = event.clientX - startX;
-    if (diffX > 24) {
+    if (diffX > 18) {
       els.card.classList.add("swipe-right");
       els.card.classList.remove("swipe-left");
-    } else if (diffX < -24) {
+    } else if (diffX < -18) {
       els.card.classList.add("swipe-left");
       els.card.classList.remove("swipe-right");
     } else {
