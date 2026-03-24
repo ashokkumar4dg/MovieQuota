@@ -17,9 +17,11 @@
       <div class="aurora aurora-a"></div>
       <div class="aurora aurora-b"></div>
       <div class="aurora aurora-c"></div>
+      <div class="wave-layer wave-layer-a"></div>
+      <div class="wave-layer wave-layer-b"></div>
 
       <header class="topbar glass-panel">
-        <div>
+        <div class="topbar-copy">
           <h1>MovieQuota</h1>
           <p class="subtle">Swipe, like and rate today's 10 hand-picked titles.</p>
         </div>
@@ -70,12 +72,12 @@
                 <div class="rating-block glass-panel">
                   <div class="rating-head">
                     <strong>Your Rating</strong>
-                    <span id="ratingState" class="subtle">Tap 1-10 to lock</span>
+                    <span id="ratingState" class="subtle">Tap 1-5 stars to rate</span>
                   </div>
+                  <div id="ratingEmoji" class="rating-emoji" aria-hidden="true">🙂</div>
                   <div class="rating-star-wrap">
                     <div id="ratingStar" class="rating-star" aria-hidden="true"></div>
                   </div>
-                  <input id="ratingRange" class="rating-range" type="range" min="0" max="10" step="1" value="0" />
                 </div>
 
               </div>
