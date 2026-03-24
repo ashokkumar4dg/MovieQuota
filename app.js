@@ -1,43 +1,40 @@
 const DAILY_COUNT = 10;
-const STORAGE_KEY = "cineswipe-v1";
+const STORAGE_KEY = "moviequota-v2";
 const APP_CONFIG = window.CINESWIPE_CONFIG || {};
 let remoteTitles = [];
+
 const POSTER_FALLBACK =
   "data:image/svg+xml;utf8," +
   encodeURIComponent(`
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 900">
       <defs>
         <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
-          <stop stop-color="#16263d"/>
-          <stop offset="1" stop-color="#0c1422"/>
+          <stop stop-color="#0d1624"/>
+          <stop offset="1" stop-color="#13243b"/>
         </linearGradient>
       </defs>
       <rect width="600" height="900" fill="url(#g)"/>
-      <text x="50%" y="46%" fill="#f4f7fb" font-family="Arial, sans-serif" font-size="46" text-anchor="middle">MovieQuota</text>
-      <text x="50%" y="53%" fill="#9eb2c8" font-family="Arial, sans-serif" font-size="24" text-anchor="middle">Poster unavailable</text>
+      <text x="50%" y="46%" fill="#f3f7ff" font-family="Arial, sans-serif" font-size="48" text-anchor="middle">MovieQuota</text>
+      <text x="50%" y="53%" fill="#9db4d2" font-family="Arial, sans-serif" font-size="24" text-anchor="middle">Poster unavailable</text>
     </svg>
   `);
 
 const RECOMMENDATION_DETAILS = {
   "laapataa-ladies": {
     platform: "Netflix",
-    languages: "Hindi, English",
-    note: "Available on Netflix. Hindi is primary, with English support available."
+    languages: "Hindi, English"
   },
-  "fallout": {
+  fallout: {
     platform: "Prime Video",
-    languages: "English, Hindi",
-    note: "Available on Prime Video. English is original, and Hindi availability is supported on Prime Video India."
+    languages: "English, Hindi"
   },
-  "mirzapur": {
+  mirzapur: {
     platform: "Prime Video",
-    languages: "Hindi, English",
-    note: "Available on Prime Video. Hindi is primary, with English support available."
+    languages: "Hindi, English"
   },
-  "maharaja": {
+  maharaja: {
     platform: "Netflix",
-    languages: "Hindi, English",
-    note: "Available on Netflix with Hindi access and English support."
+    languages: "Hindi, English"
   }
 };
 
@@ -331,33 +328,35 @@ const els = {
   tmdbBadge: document.getElementById("tmdbBadge"),
   descriptionText: document.getElementById("descriptionText"),
   genreRow: document.getElementById("genreRow"),
+  ratingStar: document.getElementById("ratingStar"),
+  ratingEmoji: document.getElementById("ratingEmoji"),
+  ratingState: document.getElementById("ratingState"),
   skipButton: document.getElementById("skipButton"),
   interestedButton: document.getElementById("interestedButton"),
-  ratingRange: document.getElementById("ratingRange"),
-  ratingStar: document.getElementById("ratingStar"),
-  ratingState: document.getElementById("ratingState"),
   doneState: document.getElementById("doneState"),
   summaryText: document.getElementById("summaryText"),
   unlockText: document.getElementById("unlockText"),
   recommendationBox: document.getElementById("recommendationBox"),
   recommendationGrid: document.getElementById("recommendationGrid"),
+  doneHistoryButton: document.getElementById("doneHistoryButton"),
+  retakeButton: document.getElementById("retakeButton"),
   doneHistoryPreview: document.getElementById("doneHistoryPreview"),
   doneHistoryList: document.getElementById("doneHistoryList"),
   historyPanel: document.getElementById("historyPanel"),
   historyContent: document.getElementById("historyContent"),
   closeHistoryButton: document.getElementById("closeHistoryButton"),
-  doneHistoryButton: document.getElementById("doneHistoryButton"),
-  retakeButton: document.getElementById("retakeButton"),
   tabButtons: Array.from(document.querySelectorAll(".tab-button"))
 };
 
 let state = loadState();
 let currentTab = "today";
+let ratingPreview = 0;
+let isAnimating = false;
 
 bootstrap();
 
 async function bootstrap() {
-  ensureDeviceToken();
+  ensureUserId();
   await hydrateRemoteTitles();
   ensureTodayBatch();
   bindEvents();
@@ -366,19 +365,16 @@ async function bootstrap() {
 
 function loadState() {
   const fallback = {
-    userId: crypto.randomUUID(),
-    history: {},
+    userId: "",
+    activeDate: todayKey(),
     batches: {},
-    activeDate: todayKey()
+    history: {}
   };
 
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      return fallback;
-    }
-    return { ...fallback, ...JSON.parse(raw) };
-  } catch (error) {
+    return raw ? { ...fallback, ...JSON.parse(raw) } : fallback;
+  } catch {
     return fallback;
   }
 }
@@ -387,7 +383,7 @@ function saveState() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
-function ensureDeviceToken() {
+function ensureUserId() {
   if (!state.userId) {
     state.userId = crypto.randomUUID();
     saveState();
@@ -404,25 +400,36 @@ function dateOffsetKey(offset) {
   return date.toISOString().slice(0, 10);
 }
 
+function formatDateLabel(dateKey) {
+  return new Date(dateKey).toLocaleDateString(undefined, {
+    weekday: "short",
+    day: "numeric",
+    month: "short"
+  });
+}
+
+function formatTomorrowHint() {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  return tomorrow.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "short" });
+}
+
 function ensureTodayBatch() {
   const key = todayKey();
   state.activeDate = key;
-  const sourceTitles = getSourceTitles();
-
   if (!state.batches[key]) {
     const previousIds = Object.values(state.batches).flat();
-    const selection = pickDailyTitles(key, previousIds, sourceTitles);
-    state.batches[key] = selection.map((item) => item.id);
+    state.batches[key] = pickDailyTitles(key, previousIds, getSourceTitles()).map((item) => item.id);
   }
-
   saveState();
 }
 
 function pickDailyTitles(seedInput, previousIds, sourceTitles) {
   const available = sourceTitles.filter((item) => !previousIds.includes(item.id));
   const pool = available.length >= DAILY_COUNT ? available : sourceTitles;
-  const seeded = [...pool].sort((a, b) => seededRandom(`${seedInput}-${a.id}`) - seededRandom(`${seedInput}-${b.id}`));
-  return seeded.slice(0, DAILY_COUNT);
+  return [...pool]
+    .sort((a, b) => seededRandom(`${seedInput}-${a.id}`) - seededRandom(`${seedInput}-${b.id}`))
+    .slice(0, DAILY_COUNT);
 }
 
 function seededRandom(seed) {
@@ -432,6 +439,10 @@ function seededRandom(seed) {
     hash |= 0;
   }
   return Math.abs(Math.sin(hash) * 10000) % 1;
+}
+
+function getSourceTitles() {
+  return remoteTitles.length ? remoteTitles : TITLES;
 }
 
 function getTodayTitles() {
@@ -444,264 +455,34 @@ function getTodayActions() {
   return state.history[state.activeDate] || {};
 }
 
+function getCurrentTitle() {
+  const actions = getTodayActions();
+  return getTodayTitles().find((item) => !actions[item.id]) || null;
+}
+
 function getCompletedCount() {
   return Object.keys(getTodayActions()).length;
 }
 
-function getCurrentTitle() {
-  const todayTitles = getTodayTitles();
-  const actions = getTodayActions();
-  return todayTitles.find((item) => !actions[item.id]) || null;
-}
-
-function render() {
-  const completed = getCompletedCount();
-  const percent = completed / DAILY_COUNT * 100;
-  els.dayLabel.textContent = formatDateLabel(state.activeDate);
-  els.progressText.textContent = `${completed} / ${DAILY_COUNT} completed`;
-  els.progressFill.style.width = `${percent}%`;
-
-  const current = getCurrentTitle();
-  if (!current) {
-    renderDoneState();
-    renderHistory();
-    return;
-  }
-
-  els.card.classList.remove("hidden");
-  els.doneState.classList.add("hidden");
-
-  els.posterImage.src = current.poster;
-  els.posterImage.alt = `${current.title} poster`;
-  els.posterImage.onerror = () => {
-    els.posterImage.onerror = null;
-    els.posterImage.src = POSTER_FALLBACK;
-  };
-  els.typeBadge.textContent = current.type;
-  els.industryBadge.textContent = current.industry;
-  els.titleText.textContent = current.title;
-  els.metaText.textContent = `${current.year} - ${current.duration}`;
-  els.imdbBadge.textContent = `IMDb ${current.imdb}`;
-  els.tmdbBadge.textContent = `TMDB ${current.tmdb}`;
-  els.descriptionText.textContent = current.description;
-  els.genreRow.innerHTML = "";
-  current.genres.forEach((genre) => {
-    const text = document.createElement("span");
-    text.textContent = genre;
-    els.genreRow.appendChild(text);
-  });
-
-  updateRatingUI(0);
-  renderHistory();
-}
-
-function renderDoneState() {
-  const todayEntries = Object.values(getTodayActions());
-  const likedCount = todayEntries.filter((entry) => entry.liked).length;
-  const topGenres = summarizeTopGenres(todayEntries);
-  els.summaryText.textContent = `You liked ${likedCount} titles today. Top mood: ${topGenres || "Still learning your taste"}.`;
-  renderRecommendation(todayEntries);
-  els.doneHistoryPreview.classList.add("hidden");
-  els.doneHistoryList.innerHTML = "";
-  els.unlockText.textContent = `New recommendations unlock after ${formatTomorrowHint()}.`;
-  els.card.classList.add("hidden");
-  els.doneState.classList.remove("hidden");
-}
-
-function summarizeTopGenres(entries) {
-  const counter = {};
-  const sourceTitles = getSourceTitles();
-  entries.forEach((entry) => {
-    const item = sourceTitles.find((title) => title.id === entry.titleId);
-    if (!item || !entry.liked) {
-      return;
-    }
-    item.genres.forEach((genre) => {
-      counter[genre] = (counter[genre] || 0) + 1;
-    });
-  });
-  const top = Object.entries(counter).sort((a, b) => b[1] - a[1])[0];
-  return top ? top[0] : "";
-}
-
-function renderRecommendation(entries) {
-  const recommendations = getPersonalRecommendations(entries);
-  if (!recommendations.length) {
-    els.recommendationBox.classList.add("hidden");
-    return;
-  }
-
-  els.recommendationGrid.innerHTML = "";
-  recommendations.forEach((recommendation) => {
-    const details = RECOMMENDATION_DETAILS[recommendation.id] || null;
-    const card = document.createElement("article");
-    card.className = "recommendation-card-mini";
-    card.innerHTML = `
-      <h3>${recommendation.title}</h3>
-      <p class="subtle">${recommendation.reason}</p>
-      <div class="recommendation-meta">
-        <span class="chip chip-soft">${recommendation.type}</span>
-        <span class="rating-pill">IMDb ${recommendation.imdb}</span>
-      </div>
-      ${details ? `<p class="recommendation-extra">${details.platform} • ${details.languages}</p><p class="recommendation-extra">${details.note}</p>` : ""}
-      <a class="watch-link" href="https://t.me/MovieQuota" target="_blank" rel="noreferrer">
-        <span class="watch-link-icon">✈</span>
-        <span>Watch Online</span>
-      </a>
-    `;
-
-    const titleEl = card.querySelector("h3");
-    const ratingEl = card.querySelector(".rating-pill:last-child");
-    if (titleEl && ratingEl) {
-      const head = document.createElement("div");
-      head.className = "recommendation-head";
-      titleEl.replaceWith(head);
-      head.appendChild(titleEl);
-      head.appendChild(ratingEl);
-      ratingEl.classList.add("recommendation-rating-pill");
-    }
-
-    const extras = Array.from(card.querySelectorAll(".recommendation-extra"));
-    if (details && extras.length) {
-      extras[0].textContent = `${details.platform} - ${details.languages}`;
-    }
-    extras.slice(1).forEach((node) => node.remove());
-
-    const watchIcon = card.querySelector(".watch-link-icon");
-    if (watchIcon) {
-      watchIcon.textContent = "";
-    }
-
-    els.recommendationGrid.appendChild(card);
-  });
-  els.recommendationBox.classList.remove("hidden");
-}
-
-function getPersonalRecommendations(entries) {
-  const sourceTitles = getSourceTitles();
-  const watchedToday = new Set(entries.map((entry) => entry.titleId));
-  const strongLikes = entries.filter((entry) => Number(entry.rating) >= 8);
-  const ratedPool = strongLikes.length ? strongLikes : entries.filter((entry) => entry.liked);
-
-  if (!ratedPool.length) {
-    return [];
-  }
-
-  const genreScores = {};
-  const industryScores = {};
-
-  ratedPool.forEach((entry) => {
-    const item = sourceTitles.find((title) => title.id === entry.titleId);
-    if (!item) {
-      return;
-    }
-    const weight = Number(entry.rating) || 7;
-    item.genres.forEach((genre) => {
-      genreScores[genre] = (genreScores[genre] || 0) + weight;
-    });
-    industryScores[item.industry] = (industryScores[item.industry] || 0) + weight;
-  });
-
-  const topGenre = getTopKey(genreScores);
-  const topIndustry = getTopKey(industryScores);
-  const seenEver = getSeenTitleIds();
-  const pool = sourceTitles
-    .filter((item) => !watchedToday.has(item.id))
-    .filter((item) => !seenEver.has(item.id))
-    .map((item) => ({
-      item,
-      score: getRecommendationScore(item, topGenre, topIndustry) + getMetadataBonus(item.id)
-    }))
-    .filter((entry) => entry.score > 0)
-    .sort((a, b) => b.score - a.score || Number(b.item.imdb) - Number(a.item.imdb));
-
-  const picks = [];
-  const moviePick = pool.find((entry) => entry.item.type === "Movie");
-  const seriesPick = pool.find((entry) => entry.item.type !== "Movie");
-
-  if (moviePick) {
-    picks.push({
-      ...moviePick.item,
-      reason: buildRecommendationReason(moviePick.item, topGenre, topIndustry)
-    });
-  }
-
-  if (seriesPick) {
-    picks.push({
-      ...seriesPick.item,
-      reason: buildRecommendationReason(seriesPick.item, topGenre, topIndustry)
-    });
-  }
-
-  return picks.slice(0, 2);
-}
-
-function getRecommendationScore(item, topGenre, topIndustry) {
-  let score = 0;
-  if (topGenre && item.genres.includes(topGenre)) {
-    score += 4;
-  }
-  if (topIndustry && item.industry === topIndustry) {
-    score += 3;
-  }
-  score += Number(item.imdb || 0) / 2;
-  return score;
-}
-
-function getMetadataBonus(id) {
-  return RECOMMENDATION_DETAILS[id] ? 1.5 : 0;
-}
-
-function buildRecommendationReason(item, topGenre, topIndustry) {
-  if (topGenre && topIndustry && item.genres.includes(topGenre) && item.industry === topIndustry) {
-    return `Because you rated ${topGenre.toLowerCase()} ${topIndustry.toLowerCase()} titles highly, you should also watch this.`;
-  }
-  if (topGenre && item.genres.includes(topGenre)) {
-    return `You clicked 8, 9 or 10 more often on ${topGenre.toLowerCase()} picks, so this is a strong match.`;
-  }
-  if (topIndustry && item.industry === topIndustry) {
-    return `You seem to enjoy ${topIndustry.toLowerCase()} recommendations more, so this fits your current taste.`;
-  }
-  return "This matches your recent high-rating pattern and should fit your taste.";
-}
-
-function getTopKey(counter) {
-  const top = Object.entries(counter).sort((a, b) => b[1] - a[1])[0];
-  return top ? top[0] : "";
-}
-
-function getSeenTitleIds() {
-  const ids = new Set();
-  Object.values(state.history).forEach((dayEntries) => {
-    Object.values(dayEntries).forEach((entry) => {
-      ids.add(entry.titleId);
-    });
-  });
-  return ids;
-}
-
-function getSourceTitles() {
-  return remoteTitles.length ? remoteTitles : TITLES;
-}
-
 async function hydrateRemoteTitles() {
-  if (APP_CONFIG.titlesEndpoint) {
-    try {
-      const response = await fetch(APP_CONFIG.titlesEndpoint, {
-        headers: buildRemoteHeaders()
-      });
-      if (!response.ok) {
-        throw new Error(`Request failed with ${response.status}`);
-      }
-      const payload = await response.json();
-      const list = Array.isArray(payload) ? payload : payload.titles;
-      if (Array.isArray(list) && list.length) {
-        remoteTitles = normalizeTitles(list);
-        return;
-      }
-    } catch (error) {
-      console.warn("Remote title fetch failed", error);
+  if (!APP_CONFIG.titlesEndpoint) {
+    return;
+  }
+
+  try {
+    const response = await fetch(APP_CONFIG.titlesEndpoint, {
+      headers: buildRemoteHeaders()
+    });
+    if (!response.ok) {
+      throw new Error(`Request failed with ${response.status}`);
     }
+    const payload = await response.json();
+    const list = Array.isArray(payload) ? payload : payload.titles;
+    if (Array.isArray(list) && list.length) {
+      remoteTitles = normalizeTitles(list);
+    }
+  } catch (error) {
+    console.warn("Remote title fetch failed", error);
   }
 }
 
@@ -724,21 +505,14 @@ function normalizeTitles(items) {
 }
 
 function extractYear(value) {
-  if (!value || typeof value !== "string") {
-    return null;
-  }
-  return value.slice(0, 4);
+  return value && typeof value === "string" ? value.slice(0, 4) : null;
 }
 
 function buildRemoteHeaders() {
-  const headers = {
-    "x-device-token": state.userId
-  };
-
+  const headers = { "x-device-token": state.userId };
   if (APP_CONFIG.apiKey) {
     headers.Authorization = `Bearer ${APP_CONFIG.apiKey}`;
   }
-
   return headers;
 }
 
@@ -764,61 +538,302 @@ async function syncAction(payload) {
   }
 }
 
-function formatTomorrowHint() {
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  return tomorrow.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "short" });
+function render() {
+  const completed = getCompletedCount();
+  els.dayLabel.textContent = formatDateLabel(state.activeDate);
+  els.progressText.textContent = `${completed} / ${DAILY_COUNT} completed`;
+  els.progressFill.style.width = `${(completed / DAILY_COUNT) * 100}%`;
+
+  const current = getCurrentTitle();
+  if (!current) {
+    renderDoneState();
+    renderHistory();
+    return;
+  }
+
+  els.card.classList.remove("hidden");
+  els.doneState.classList.add("hidden");
+  els.doneHistoryPreview.classList.add("hidden");
+  ratingPreview = 0;
+
+  els.posterImage.src = current.poster || POSTER_FALLBACK;
+  els.posterImage.alt = `${current.title} poster`;
+  els.posterImage.onerror = () => {
+    els.posterImage.onerror = null;
+    els.posterImage.src = POSTER_FALLBACK;
+  };
+  els.typeBadge.textContent = current.type;
+  els.industryBadge.textContent = current.industry;
+  els.titleText.textContent = current.title;
+  els.metaText.textContent = `${current.year} - ${current.duration}`;
+  els.imdbBadge.textContent = `IMDb ${current.imdb}`;
+  els.tmdbBadge.textContent = `TMDB ${current.tmdb}`;
+  els.descriptionText.textContent = current.description;
+
+  els.genreRow.innerHTML = "";
+  current.genres.forEach((genre) => {
+    const span = document.createElement("span");
+    span.textContent = genre;
+    els.genreRow.appendChild(span);
+  });
+
+  updateRatingUI(0);
+  renderHistory();
 }
 
-function updateRatingUI(selectedRating) {
-  const rating = Number(selectedRating) || 0;
-  els.ratingRange.value = String(rating);
-  els.ratingStar.innerHTML = "";
-  for (let index = 1; index <= 10; index += 1) {
-    const star = document.createElement("span");
-    star.textContent = "★";
-    if (index <= rating) {
-      star.classList.add("filled");
-    }
-    els.ratingStar.appendChild(star);
+function renderDoneState() {
+  const entries = Object.values(getTodayActions());
+  const likedCount = entries.filter((entry) => entry.liked).length;
+  els.summaryText.textContent = `You rated ${entries.length} titles today and liked ${likedCount}.`;
+  els.unlockText.textContent = `New recommendations unlock after ${formatTomorrowHint()}.`;
+  renderRecommendations(entries);
+  renderHistory();
+  els.card.classList.add("hidden");
+  els.doneState.classList.remove("hidden");
+}
+
+function renderRecommendations(entries) {
+  const picks = getPersonalRecommendations(entries);
+  els.recommendationGrid.innerHTML = "";
+
+  if (!picks.length) {
+    els.recommendationBox.classList.add("hidden");
+    return;
   }
-  els.ratingState.textContent = rating ? `Locked at ${rating}/10` : "Slide 0-10 to rate";
+
+  picks.forEach((item) => {
+    const details = RECOMMENDATION_DETAILS[item.id];
+    const card = document.createElement("article");
+    card.className = "recommendation-card-mini";
+    card.innerHTML = `
+      <div class="recommendation-head">
+        <h3>${item.title}</h3>
+        <span class="recommendation-rating">IMDb ${item.imdb}</span>
+      </div>
+      <p class="subtle">${item.reason}</p>
+      <p class="recommendation-line">${item.type}${details ? ` - ${details.platform} - ${details.languages}` : ""}</p>
+      <a class="watch-link" href="https://t.me/MovieQuota" target="_blank" rel="noreferrer">Watch Online</a>
+    `;
+    els.recommendationGrid.appendChild(card);
+  });
+
+  els.recommendationBox.classList.remove("hidden");
+}
+
+function getPersonalRecommendations(entries) {
+  const strong = entries.filter((entry) => Number(entry.rating) >= 4);
+  const pool = strong.length ? strong : entries.filter((entry) => entry.liked);
+  if (!pool.length) {
+    return [];
+  }
+
+  const sourceTitles = getSourceTitles();
+  const seen = new Set(Object.values(state.history).flatMap((day) => Object.keys(day)));
+  const genreScores = {};
+  const industryScores = {};
+
+  pool.forEach((entry) => {
+    const title = sourceTitles.find((item) => item.id === entry.titleId);
+    if (!title) {
+      return;
+    }
+    const weight = Number(entry.rating) || 3;
+    title.genres.forEach((genre) => {
+      genreScores[genre] = (genreScores[genre] || 0) + weight;
+    });
+    industryScores[title.industry] = (industryScores[title.industry] || 0) + weight;
+  });
+
+  const topGenre = Object.entries(genreScores).sort((a, b) => b[1] - a[1])[0]?.[0];
+  const topIndustry = Object.entries(industryScores).sort((a, b) => b[1] - a[1])[0]?.[0];
+
+  return sourceTitles
+    .filter((item) => !seen.has(item.id))
+    .map((item) => ({
+      ...item,
+      score:
+        (topGenre && item.genres.includes(topGenre) ? 4 : 0) +
+        (topIndustry && item.industry === topIndustry ? 3 : 0) +
+        Number(item.imdb) / 2,
+      reason:
+        topGenre && item.genres.includes(topGenre)
+          ? `Because you rated ${topGenre.toLowerCase()} titles highly, this is a strong match.`
+          : "This matches your recent ratings and likes."
+    }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 2);
+}
+
+function renderStarText(rating) {
+  const value = Number(rating) || 0;
+  let stars = "";
+  for (let i = 1; i <= 5; i += 1) {
+    stars += i <= value ? "★" : "☆";
+  }
+  return stars;
+}
+
+function renderHistory() {
+  let entries = [];
+  if (currentTab === "week") {
+    for (let offset = 0; offset > -7; offset -= 1) {
+      entries.push(...Object.values(state.history[dateOffsetKey(offset)] || {}));
+    }
+  } else {
+    const key = currentTab === "yesterday" ? dateOffsetKey(-1) : todayKey();
+    entries = Object.values(state.history[key] || {});
+  }
+
+  els.historyContent.innerHTML = "";
+
+  if (!entries.length) {
+    els.historyContent.innerHTML = `<div class="empty-state">No activity here yet.</div>`;
+    return;
+  }
+
+  entries
+    .sort((a, b) => new Date(b.actedAt) - new Date(a.actedAt))
+    .forEach((entry) => {
+      const item = document.createElement("article");
+      item.className = "history-item";
+      item.innerHTML = `
+        <img src="${entry.poster || POSTER_FALLBACK}" alt="${entry.title} poster" />
+        <div class="history-meta">
+          <strong>${entry.title}</strong>
+          <p>${entry.liked ? "Liked" : "Skipped"} - ${entry.rating ? `${entry.rating}/5` : "No rating"}</p>
+          ${entry.rating ? `<p class="history-stars">${renderStarText(entry.rating)}</p>` : ""}
+          <p class="subtle">${new Date(entry.actedAt).toLocaleString()}</p>
+        </div>
+      `;
+      const image = item.querySelector("img");
+      image.onerror = () => {
+        image.onerror = null;
+        image.src = POSTER_FALLBACK;
+      };
+      els.historyContent.appendChild(item);
+    });
+}
+
+function renderDoneHistoryPreview() {
+  const entries = Object.values(getTodayActions()).sort((a, b) => new Date(b.actedAt) - new Date(a.actedAt));
+  els.doneHistoryList.innerHTML = "";
+
+  entries.forEach((entry) => {
+    const item = document.createElement("article");
+    item.className = "done-history-item";
+    item.innerHTML = `
+      <img src="${entry.poster || POSTER_FALLBACK}" alt="${entry.title} poster" />
+      <div class="done-history-body">
+        <strong class="done-history-title">${entry.title}</strong>
+        <div class="done-history-divider"></div>
+        ${entry.rating ? `<p class="history-stars">${renderStarText(entry.rating)}</p>` : ""}
+        <p class="subtle">Rated ${entry.rating ? `${entry.rating}/5` : "No rating"} at ${new Date(entry.actedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</p>
+      </div>
+    `;
+    const image = item.querySelector("img");
+    image.onerror = () => {
+      image.onerror = null;
+      image.src = POSTER_FALLBACK;
+    };
+    els.doneHistoryList.appendChild(item);
+  });
+}
+
+function updateRatingUI(rating) {
+  const value = Number(rating) || 0;
+  els.ratingStar.innerHTML = "";
+  for (let i = 1; i <= 5; i += 1) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `rating-star-button${i <= value ? " filled" : ""}`;
+    button.dataset.rating = String(i);
+    button.textContent = i <= value ? "★" : "☆";
+    button.setAttribute("aria-label", `Rate ${i} star${i === 1 ? "" : "s"}`);
+    els.ratingStar.appendChild(button);
+  }
+  els.ratingState.textContent = value ? `Locked at ${value}/5` : "Tap 1-5 stars to rate";
+  els.ratingEmoji.textContent = "";
 }
 
 function bindEvents() {
-  els.interestedButton.addEventListener("click", () => {
-    commitAction({ swipeDirection: "right", liked: true, rating: null });
-  });
-  els.skipButton.addEventListener("click", () => {
-    commitAction({ swipeDirection: "left", liked: false, rating: null });
-  });
+  els.skipButton.onclick = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    commitAction({ swipeDirection: "left", liked: false, rating: null, animateClass: "auto-advance-left", haptic: [18, 12, 22] });
+  };
 
-  els.ratingRange.addEventListener("input", () => {
-    updateRatingUI(Number(els.ratingRange.value));
-  });
+  els.interestedButton.onclick = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    commitAction({ swipeDirection: "right", liked: true, rating: null, animateClass: "auto-advance-right", haptic: [18, 12, 22] });
+  };
 
-  els.ratingRange.addEventListener("change", () => {
-    const rating = Number(els.ratingRange.value);
-    if (!rating) {
+  els.ratingStar.onpointermove = (event) => {
+    if (!window.matchMedia("(hover: hover)").matches) {
       return;
     }
-    commitAction({ swipeDirection: "right", liked: true, rating });
-  });
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) {
+      return;
+    }
+    const rating = Number(target.dataset.rating || 0);
+    if (!rating || rating === ratingPreview) {
+      return;
+    }
+    ratingPreview = rating;
+    updateRatingUI(rating);
+  };
 
-  els.closeHistoryButton.addEventListener("click", toggleHistoryPanel);
-  els.doneHistoryButton.addEventListener("click", () => {
+  els.ratingStar.onpointerleave = () => {
+    if (!window.matchMedia("(hover: hover)").matches) {
+      return;
+    }
+    ratingPreview = 0;
+    updateRatingUI(0);
+  };
+
+  els.ratingStar.onclick = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) {
+      return;
+    }
+    const rating = Number(target.dataset.rating || 0);
+    if (!rating || isAnimating) {
+      return;
+    }
+    ratingPreview = 0;
+    updateRatingUI(rating);
+    vibrate([12, 8, 18]);
+    window.setTimeout(() => {
+      commitAction({ swipeDirection: "right", liked: true, rating, animateClass: "auto-advance-right", haptic: [12, 8, 18] });
+    }, 140);
+  };
+
+  els.closeHistoryButton.onclick = () => {
+    els.historyPanel.classList.add("hidden");
+  };
+
+  els.doneHistoryButton.onclick = () => {
     renderDoneHistoryPreview();
     els.doneHistoryPreview.classList.remove("hidden");
     els.doneHistoryPreview.scrollIntoView({ behavior: "smooth", block: "start" });
-  });
-  els.retakeButton.addEventListener("click", resetTodayProgress);
+  };
+
+  els.retakeButton.onclick = () => {
+    state.history[state.activeDate] = {};
+    saveState();
+    els.doneHistoryPreview.classList.add("hidden");
+    render();
+  };
 
   els.tabButtons.forEach((button) => {
-    button.addEventListener("click", () => {
+    button.onclick = () => {
       currentTab = button.dataset.tab;
       els.tabButtons.forEach((item) => item.classList.toggle("active", item === button));
       renderHistory();
-    });
+    };
   });
 
   bindSwipeGestures();
@@ -830,8 +845,10 @@ function bindSwipeGestures() {
   let active = false;
 
   els.card.addEventListener("pointerdown", (event) => {
-    if (event.pointerType === "touch") {
-      els.card.setPointerCapture(event.pointerId);
+    const blocked = event.target instanceof HTMLElement && event.target.closest(".rating-block, .outside-actions");
+    if (blocked || isAnimating) {
+      active = false;
+      return;
     }
     startX = event.clientX;
     diffX = 0;
@@ -843,10 +860,10 @@ function bindSwipeGestures() {
       return;
     }
     diffX = event.clientX - startX;
-    if (diffX > 18) {
+    if (diffX > 14) {
       els.card.classList.add("swipe-right");
       els.card.classList.remove("swipe-left");
-    } else if (diffX < -18) {
+    } else if (diffX < -14) {
       els.card.classList.add("swipe-left");
       els.card.classList.remove("swipe-right");
     } else {
@@ -860,144 +877,62 @@ function bindSwipeGestures() {
         return;
       }
       active = false;
-      if (diffX > 55) {
-        animateThen(() => commitAction({ swipeDirection: "right", liked: true, rating: null }));
-      } else if (diffX < -55) {
-        animateThen(() => commitAction({ swipeDirection: "left", liked: false, rating: null }));
+      if (diffX > 48) {
+        commitAction({ swipeDirection: "right", liked: true, rating: null, animateClass: "auto-advance-right", haptic: [18, 12, 22] });
+      } else if (diffX < -48) {
+        commitAction({ swipeDirection: "left", liked: false, rating: null, animateClass: "auto-advance-left", haptic: [18, 12, 22] });
+      } else {
+        els.card.classList.remove("swipe-left", "swipe-right");
       }
-      els.card.classList.remove("swipe-left", "swipe-right");
     });
   });
-}
-
-function animateThen(callback) {
-  window.setTimeout(callback, 120);
 }
 
 function commitAction(partial) {
   const current = getCurrentTitle();
-  if (!current) {
+  if (!current || isAnimating) {
     return;
   }
 
-  const todayHistory = state.history[state.activeDate] || {};
-  todayHistory[current.id] = {
-    titleId: current.id,
-    title: current.title,
-    poster: current.poster,
-    liked: Boolean(partial.liked),
-    swipeDirection: partial.swipeDirection || "right",
-    rating: partial.rating || null,
-    actedAt: new Date().toISOString()
-  };
-  state.history[state.activeDate] = todayHistory;
-  saveState();
-  void syncAction({
-    titleId: current.id,
-    swipeDirection: partial.swipeDirection || "right",
-    liked: Boolean(partial.liked),
-    rating: partial.rating || null
-  });
-  vibrate();
-  render();
-}
-
-function vibrate() {
-  if (navigator.vibrate) {
-    navigator.vibrate(35);
-  }
-}
-
-function toggleHistoryPanel() {
-  els.historyPanel.classList.toggle("hidden");
-  renderHistory();
-}
-
-function renderHistory() {
-  const selectedDateKey = getTabDateKey(currentTab);
-  let entries = [];
-
-  if (currentTab === "week") {
-    entries = getLastSevenDaysEntries();
-  } else {
-    entries = Object.values(state.history[selectedDateKey] || {});
-  }
-
-  els.historyContent.innerHTML = "";
-
-  if (!entries.length) {
-    const empty = document.createElement("div");
-    empty.className = "empty-state";
-    empty.textContent = "No activity here yet.";
-    els.historyContent.appendChild(empty);
-    return;
-  }
-
-  entries
-    .sort((a, b) => new Date(b.actedAt) - new Date(a.actedAt))
-    .forEach((entry) => {
-      const item = document.createElement("article");
-      item.className = "history-item";
-      const poster = entry.poster || POSTER_FALLBACK;
-      item.innerHTML = `
-        <img src="${poster}" alt="${entry.title} poster" />
-        <div class="history-meta">
-          <strong>${entry.title}</strong>
-          <p>${entry.liked ? "Liked" : "Skipped"} - ${entry.rating ? `${entry.rating}/10` : "No rating"}</p>
-          <p class="subtle">${new Date(entry.actedAt).toLocaleString()}</p>
-        </div>
-      `;
-      const image = item.querySelector("img");
-      image.onerror = () => {
-        image.onerror = null;
-        image.src = POSTER_FALLBACK;
-      };
-      els.historyContent.appendChild(item);
+  const finalize = () => {
+    const todayHistory = state.history[state.activeDate] || {};
+    todayHistory[current.id] = {
+      titleId: current.id,
+      title: current.title,
+      poster: current.poster,
+      liked: Boolean(partial.liked),
+      swipeDirection: partial.swipeDirection || "right",
+      rating: partial.rating || null,
+      actedAt: new Date().toISOString()
+    };
+    state.history[state.activeDate] = todayHistory;
+    saveState();
+    void syncAction({
+      titleId: current.id,
+      swipeDirection: partial.swipeDirection || "right",
+      liked: Boolean(partial.liked),
+      rating: partial.rating || null
     });
-}
+    vibrate(partial.haptic || 35);
+    els.card.classList.remove("swipe-left", "swipe-right", "auto-advance-left", "auto-advance-right");
+    isAnimating = false;
+    render();
+  };
 
-function getTabDateKey(tab) {
-  if (tab === "yesterday") {
-    return dateOffsetKey(-1);
+  if (partial.animateClass) {
+    isAnimating = true;
+    els.card.classList.remove("swipe-left", "swipe-right", "auto-advance-left", "auto-advance-right");
+    void els.card.offsetWidth;
+    els.card.classList.add(partial.animateClass);
+    window.setTimeout(finalize, 240);
+    return;
   }
-  return todayKey();
+
+  finalize();
 }
 
-function getLastSevenDaysEntries() {
-  const items = [];
-  for (let offset = 0; offset > -7; offset -= 1) {
-    const dateKey = dateOffsetKey(offset);
-    items.push(...Object.values(state.history[dateKey] || {}));
+function vibrate(pattern = 35) {
+  if (navigator.vibrate) {
+    navigator.vibrate(pattern);
   }
-  return items;
-}
-
-function formatDateLabel(dateKey) {
-  const date = new Date(dateKey);
-  return date.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
-}
-
-function resetTodayProgress() {
-  state.history[state.activeDate] = {};
-  saveState();
-  els.doneHistoryPreview.classList.add("hidden");
-  els.doneHistoryList.innerHTML = "";
-  els.historyPanel.classList.add("hidden");
-  vibrate();
-  render();
-}
-
-function renderDoneHistoryPreview() {
-  const entries = Object.values(getTodayActions()).sort((a, b) => new Date(b.actedAt) - new Date(a.actedAt));
-  els.doneHistoryList.innerHTML = "";
-
-  entries.forEach((entry) => {
-    const item = document.createElement("article");
-    item.className = "done-history-item";
-    item.innerHTML = `
-      <strong>${entry.title}</strong>
-      <p class="subtle">Rated ${entry.rating ? `${entry.rating}/10` : "No rating"} at ${new Date(entry.actedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</p>
-    `;
-    els.doneHistoryList.appendChild(item);
-  });
 }
