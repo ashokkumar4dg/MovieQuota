@@ -23,9 +23,6 @@
           <h1>MovieQuota</h1>
           <p class="subtle">Swipe, like and rate today's 10 hand-picked titles.</p>
         </div>
-        <div class="topbar-actions">
-          <button id="historyToggle" class="ghost-button" type="button">History</button>
-        </div>
       </header>
 
       <main class="layout">
@@ -53,16 +50,17 @@
               </div>
 
               <div class="card-content">
-                <div class="title-row">
-                  <div>
+                <div class="title-block">
+                  <div class="title-row">
                     <h2 id="titleText">Loading...</h2>
-                    <p id="metaText" class="subtle"></p>
                   </div>
-                </div>
-
-                <div class="ratings-row">
-                  <span id="imdbBadge" class="rating-pill">IMDb</span>
-                  <span id="tmdbBadge" class="rating-pill">TMDB</span>
+                  <div class="meta-row">
+                    <p id="metaText" class="subtle"></p>
+                    <div class="ratings-row">
+                      <span id="imdbBadge" class="rating-text">IMDb</span>
+                      <span id="tmdbBadge" class="rating-text">TMDB</span>
+                    </div>
+                  </div>
                 </div>
 
                 <p id="descriptionText" class="description"></p>
@@ -77,12 +75,19 @@
                   <div id="ratingGrid" class="rating-grid"></div>
                 </div>
 
-                <div class="actions-row">
-                  <button id="skipButton" class="glass-button action-pill action-pill-muted" type="button">Left Swipe</button>
-                  <button id="interestedButton" class="glass-button action-pill action-pill-bright" type="button">Right Swipe</button>
-                </div>
               </div>
             </article>
+            <div class="outside-actions">
+              <button id="skipButton" class="side-swipe side-swipe-left" type="button" aria-label="Swipe left or skip">
+                <span class="side-swipe-icon side-swipe-icon-left"></span>
+              </button>
+              <a class="telegram-mid-link" href="https://t.me/MovieQuota" target="_blank" rel="noreferrer" aria-label="Open Telegram channel">
+                <span class="telegram-mid-icon"></span>
+              </a>
+              <button id="interestedButton" class="side-swipe side-swipe-right" type="button" aria-label="Swipe right or continue">
+                <span class="side-swipe-icon side-swipe-icon-right"></span>
+              </button>
+            </div>
 
             <section id="doneState" class="done-state glass-panel hidden">
               <p class="eyebrow completion-eyebrow">Completed</p>
@@ -97,6 +102,10 @@
                 <button id="doneHistoryButton" class="glass-button" type="button">Open History</button>
                 <button id="retakeButton" class="glass-button alt" type="button">Retake Today</button>
               </div>
+              <section id="doneHistoryPreview" class="done-history-preview hidden">
+                <p class="eyebrow recommendation-label">Your Rated History</p>
+                <div id="doneHistoryList" class="done-history-list"></div>
+              </section>
             </section>
           </section>
         </section>
