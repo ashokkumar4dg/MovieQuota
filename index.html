@@ -72,7 +72,10 @@
                     <strong>Your Rating</strong>
                     <span id="ratingState" class="subtle">Tap 1-10 to lock</span>
                   </div>
-                  <div id="ratingGrid" class="rating-grid"></div>
+                  <div class="rating-star-wrap">
+                    <div id="ratingStar" class="rating-star" aria-hidden="true"></div>
+                  </div>
+                  <input id="ratingRange" class="rating-range" type="range" min="0" max="10" step="1" value="0" />
                 </div>
 
               </div>
