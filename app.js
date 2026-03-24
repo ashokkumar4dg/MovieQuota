@@ -308,7 +308,6 @@ const els = {
   tmdbBadge: document.getElementById("tmdbBadge"),
   descriptionText: document.getElementById("descriptionText"),
   genreRow: document.getElementById("genreRow"),
-  likeButton: document.getElementById("likeButton"),
   skipButton: document.getElementById("skipButton"),
   interestedButton: document.getElementById("interestedButton"),
   ratingGrid: document.getElementById("ratingGrid"),
@@ -328,7 +327,6 @@ const els = {
 
 let state = loadState();
 let currentTab = "today";
-let draftLiked = false;
 
 bootstrap();
 
@@ -448,7 +446,6 @@ function render() {
   els.card.classList.remove("hidden");
   els.doneState.classList.add("hidden");
 
-  draftLiked = false;
   els.posterImage.src = current.poster;
   els.posterImage.alt = `${current.title} poster`;
   els.posterImage.onerror = () => {
@@ -471,7 +468,6 @@ function render() {
   });
 
   updateRatingUI(null);
-  els.likeButton.classList.toggle("active", draftLiked);
   renderHistory();
 }
 
@@ -624,11 +620,6 @@ function updateRatingUI(selectedRating) {
 }
 
 function bindEvents() {
-  els.likeButton.addEventListener("click", () => {
-    draftLiked = !draftLiked;
-    els.likeButton.classList.toggle("active", draftLiked);
-    vibrate();
-  });
   els.interestedButton.addEventListener("click", () => {
     commitAction({ swipeDirection: "right", liked: true, rating: null });
   });
@@ -816,7 +807,6 @@ function formatDateLabel(dateKey) {
 
 function resetTodayProgress() {
   state.history[state.activeDate] = {};
-  draftLiked = false;
   saveState();
   els.historyPanel.classList.add("hidden");
   vibrate();
